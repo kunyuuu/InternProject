@@ -19,10 +19,15 @@ cross_table = pd.crosstab(accepts.bankruptcy_ind,accepts.bad_ind, margins=True)
 #cross_table = pd.crosstab(accepts.used_ind,accepts.bad_ind, margins=True)
 print("cross table: \n", cross_table)
 
-def percConvert(ser):
-    return ser/float(ser[-1])
+#def percConvert(ser):
+    #return ser/float(ser[-1])
 
 #cross_table.apply(percConvert, axis=1)
+
+cross_table[0] = cross_table.apply(lambda x: x[0] / x['All'], axis=1)
+cross_table[1] = cross_table.apply(lambda x: x[1] / x['All'], axis=1)  
+cross_table['All'] = cross_table.apply(lambda x: x['All'] / x['All'], axis=1)  
+print("cross table: \n", cross_table)
 
 '''chi squre'''
 print('''chisq = %6.4f 
