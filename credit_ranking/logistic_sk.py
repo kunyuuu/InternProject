@@ -4,11 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+import itertools
 from woe import WoE
 from sklearn.preprocessing import Normalizer
 from sklearn.neighbors import NearestNeighbors
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix,recall_score,classification_report
+from sklearn.metrics import roc_curve, auc
 
 
 os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
@@ -34,8 +39,8 @@ def Myfillna_median(df):
         median = df[i].median()
         df[i].fillna(value=median, inplace=True)
     return df
-accepts_x_filled=Myfillna_median(df=accepts_x)
-rejects_x_filled=Myfillna_median(df=rejects_x)
+accepts_x_filled=Myfillna_median(accepts_x)
+rejects_x_filled=Myfillna_median(rejects_x)
 
 #nomalization
 accepts_x_norm = pd.DataFrame(Normalizer().fit_transform(accepts_x_filled))
@@ -66,7 +71,7 @@ data.vehicle_year = data.vehicle_year.map(lambda x: year_max if x >= year_max el
 data.vehicle_year = data.vehicle_year.map(lambda x: 2018 - x) #把年份改成距现在的时间
 
 data.drop(['vehicle_make'], axis = 1, inplace = True)
-data_filled=Myfillna_median(df=data)
+data_filled=Myfillna_median(data)
 
 X = data_filled[['age_oldest_tr', 'bankruptcy_ind', 'down_pyt', 'fico_score',
        'loan_amt', 'loan_term', 'ltv', 'msrp', 'purch_price', 'rev_util',
@@ -85,7 +90,6 @@ cols = list(X.columns)
 col_top = []
 for i in importances_order[:9]:
     col_top.append((i,cols[importances.index(i)]))
-#print(col_top)
 col = [i[1] for i in col_top]
 
 #WoE/IV
@@ -101,12 +105,45 @@ for i in col:
 pd.Series(iv_c).sort_values(ascending=False)
 
 WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data_filled['bad_ind']).optimize().fit_transform(col,data_filled['bad_ind']))
-print(WOE_c.head())
 
 ################################################################
 ### logistic regression                                      ###
-### 1. get the trainning & test set                          ###
-### 2. drop none, nomalization                               ###
-### 3. knn for reject.csv to get bad_int prediction          ###
+### 1. get the train/test set                                ###
+### 2. construct model                                       ###
+### 3. do the prediction                                     ###
 ################################################################
+
+X = WOE_c
+y = data_filled['bad_ind']
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
+
+lr = LogisticRegression(C = 1, penalty = 'l2')
+lr.fit(X_train,y_train.values.ravel())
+y_pred = lr.predict(X_test.values)
+
+#confusion matrix
+def plot_confusion_matrix(cm, classes,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    """
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=0)
+    plt.yticks(tick_marks, classes)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+
 
