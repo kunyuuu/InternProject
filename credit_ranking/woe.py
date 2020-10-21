@@ -147,7 +147,7 @@ class WoE:
 
     def _calc_stat(self):
         # calculating WoE
-        stat = self.df.groupby("labels")['Y'].agg({'mean': np.mean, 'bad': np.count_nonzero, 'obs': np.size}).copy()
+        stat = self.df.groupby("labels")['Y'].agg([('mean', np.mean), ('bad', np.count_nonzero), ('obs', np.size)]).copy()
         if self.t_type != 'b':
             stat['bad'] = stat['mean'] * stat['obs']
         stat['good'] = stat['obs'] - stat['bad']
