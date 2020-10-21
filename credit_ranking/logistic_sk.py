@@ -85,12 +85,12 @@ cols = list(X.columns)
 col_top = []
 for i in importances_order[:9]:
     col_top.append((i,cols[importances.index(i)]))
-print(col_top)
+#print(col_top)
 col = [i[1] for i in col_top]
 
-#???
+#WoE/IV
 warnings.filterwarnings("ignore")
-data_filled.head()
+print(data_filled.head())
 iv_c = {}
 for i in col:
     try:
@@ -100,9 +100,8 @@ for i in col:
     
 pd.Series(iv_c).sort_values(ascending=False)
 
-#WoE/IV
 WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data_filled['bad_ind']).optimize().fit_transform(col,data_filled['bad_ind']))
-WOE_c.head()
+print(WOE_c.head())
 
 ################################################################
 ### logistic regression                                      ###
