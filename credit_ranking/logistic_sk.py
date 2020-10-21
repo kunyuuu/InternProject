@@ -57,14 +57,13 @@ data = pd.concat([accepts.iloc[:, 2:-1], rejects_res.iloc[:,1:]], axis = 0)
 bankruptcy_dict = {'N':0, 'Y':1}
 data.bankruptcy_ind = data.bankruptcy_ind.map(bankruptcy_dict)
 
-# 盖帽法处理年份变量中的异常值，并将年份其转化为距现在多长时间
-# 此处只是一个示例，所有连续变量都要按此方法进行处理
-## ???????
+# drop outliers
+# need apply to every countinues variables
 year_min = data.vehicle_year.quantile(0.1)
 year_max = data.vehicle_year.quantile(0.99)
 data.vehicle_year = data.vehicle_year.map(lambda x: year_min if x <= year_min else x)
 data.vehicle_year = data.vehicle_year.map(lambda x: year_max if x >= year_max else x)
-data.vehicle_year = data.vehicle_year.map(lambda x: 2018 - x)
+data.vehicle_year = data.vehicle_year.map(lambda x: 2018 - x) #把年份改成距现在的时间
 
 data.drop(['vehicle_make'], axis = 1, inplace = True)
 data_filled=Myfillna_median(df=data)
@@ -77,12 +76,33 @@ X = data_filled[['age_oldest_tr', 'bankruptcy_ind', 'down_pyt', 'fico_score',
 y = data_filled['bad_ind']
 
 #random forest
+clf = RandomForestClassifier(max_depth=5, random_state=0)
+clf.fit(X,y)
+importances = list(clf.feature_importances_)
+importances_order = importances.copy()
+importances_order.sort(reverse=True)
+cols = list(X.columns)
+col_top = []
+for i in importances_order[:9]:
+    col_top.append((i,cols[importances.index(i)]))
+print(col_top)
+col = [i[1] for i in col_top]
 
-## fill code here
+#???
+warnings.filterwarnings("ignore")
+data_filled.head()
+iv_c = {}
+for i in col:
+    try:
+        iv_c[i] = WoE(v_type='c').fit(data_filled[i],data_filled['bad_ind']).optimize().iv 
+    except:
+        print(i)
+    
+pd.Series(iv_c).sort_values(ascending=False)
 
-#WOE/IV
-
-## fill code here
+#WoE/IV
+WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data_filled['bad_ind']).optimize().fit_transform(col,data_filled['bad_ind']))
+WOE_c.head()
 
 ################################################################
 ### logistic regression                                      ###
