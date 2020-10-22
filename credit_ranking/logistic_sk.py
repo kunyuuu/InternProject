@@ -12,6 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import confusion_matrix,recall_score,classification_report
 from sklearn.metrics import roc_curve, auc
 
@@ -111,13 +112,14 @@ WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data
 ### 1. get the train/test set                                ###
 ### 2. construct model                                       ###
 ### 3. do the prediction                                     ###
+### 4. model evaluation										 ###
 ################################################################
 
 X = WOE_c
 y = data_filled['bad_ind']
 X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
 
-lr = LogisticRegression(C = 1, penalty = 'l2')
+lr = LogisticRegression(C = 1, penalty = 'l1')
 lr.fit(X_train,y_train.values.ravel())
 y_pred = lr.predict(X_test.values)
 
@@ -144,6 +146,57 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+
+# Compute confusion matrix
+cnf_matrix = confusion_matrix(y_test,y_pred)
+np.set_printoptions(precision=2)
+
+print("Recall metric in the testing dataset: ", cnf_matrix[1,1]/(cnf_matrix[1,0]+cnf_matrix[1,1]))
+
+# Plot non-normalized confusion matrix
+class_names = [0,1]
+plt.figure()
+plot_confusion_matrix(cnf_matrix
+                      , classes=class_names
+                      , title='Confusion matrix')
+plt.show()
+
+#model evaluation
+fpr,tpr,threshold = roc_curve(y_test,y_pred, drop_intermediate=False) ###计算真正率和假正率  
+roc_auc = auc(fpr,tpr) ##compute auc 
+  
+plt.figure()  
+lw = 2  
+plt.figure(figsize=(10,10))  
+plt.plot(fpr, tpr, color='darkorange',  
+         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc) ###假正率为横坐标，真正率为纵坐标做曲线  
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')  
+plt.xlim([0.0, 1.0])  
+plt.ylim([0.0, 1.05])  
+plt.xlabel('False Positive Rate')  
+plt.ylabel('True Positive Rate')  
+plt.title('Receiver operating characteristic example')  
+plt.legend(loc="lower right")  
+plt.show()
+
+fig, ax = plt.subplots()
+ax.plot(1 - threshold, tpr, label='tpr') # ks曲线要按照预测概率降序排列，所以需要1-threshold镜像
+ax.plot(1 - threshold, fpr, label='fpr')
+ax.plot(1 - threshold, tpr-fpr,label='KS')
+plt.xlabel('score')
+plt.title('KS Curve')
+plt.figure(figsize=(20,20))
+legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
+
+plt.show()
+
+################################################################
+### Decision Tree                                     		 ###
+### 1. get the train/test set                                ###
+### 2. construct model                                       ###
+### 3. do the prediction                                     ###
+### 4. model evaluation										 ###
+################################################################
 
 
 
