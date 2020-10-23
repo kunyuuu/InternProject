@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import seaborn as sns
 import warnings
 import itertools
@@ -139,7 +140,7 @@ def decision_tree(X_train, X_test, y_train, y_test):
 #plot confusion matrix
 def plot_confusion_matrix(cm, classes,
                           title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+                          cmap=cm.Blues):
     """
     This function prints and plots the confusion matrix.
     """
@@ -212,7 +213,7 @@ if __name__ == "__main__":
 
     #model selection part
     print("Please Select a Model: Logistic/Decision Tree\n")
-    model = input(print("Enter Your Selection ('L' for logistic, 'D' for Desicion Tree): "))
+    model = input("Enter Your Selection ('L' for logistic, 'D' for Desicion Tree): ")
     while(True):
         if(model.lower() == "l"):
             y_pred = logistic(X_train, X_test, y_train, y_test)
@@ -222,7 +223,7 @@ if __name__ == "__main__":
             break
         else:
             print("Plese Enter a Valid model!")
-            model = input("Enter Your Selection ('L' for logistic, 'D' for Desicion Tree):d")
+            model = input("Enter Your Selection ('L' for logistic, 'D' for Desicion Tree): ")
 
     #model evaluation part
     evaluation(y_test, y_pred)
