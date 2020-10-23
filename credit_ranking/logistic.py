@@ -7,7 +7,7 @@ import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
 import sklearn.metrics as metrics
 
-#os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
+os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
 pd.set_option('display.max_columns', None)
 
 '''data cleaning and preprocessing'''
@@ -19,10 +19,10 @@ cross_table = pd.crosstab(accepts.bankruptcy_ind,accepts.bad_ind, margins=True)
 #cross_table = pd.crosstab(accepts.used_ind,accepts.bad_ind, margins=True)
 print("cross table: \n", cross_table)
 
-def percConvert(ser):
-    return ser/float(ser[-1])
-
-#cross_table.apply(percConvert, axis=1)
+cross_table[0] = cross_table.apply(lambda x: x[0] / x['All'], axis=1)
+cross_table[1] = cross_table.apply(lambda x: x[1] / x['All'], axis=1)  
+cross_table['All'] = cross_table.apply(lambda x: x['All'] / x['All'], axis=1)  
+print("cross table: \n", cross_table)
 
 '''chi squre'''
 print('''chisq = %6.4f 
@@ -50,13 +50,12 @@ print('The accurancy is %.2f' %acc)
 
 for i in np.arange(0.02, 0.3, 0.02):
     prediction = (test['proba'] > i).astype('int')
-    confusion_matrix = pd.crosstab(prediction,test.bad_ind,
-                                   margins = True)
+    confusion_matrix = pd.crosstab(prediction,test.bad_ind, margins = True)
     precision = confusion_matrix.loc[0, 0] /confusion_matrix.loc['All', 0]
     recall = confusion_matrix.loc[0, 0] / confusion_matrix.loc[0, 'All']
     Specificity = confusion_matrix.loc[1, 1] /confusion_matrix.loc[1,'All']
     f1_score = 2 * (precision * recall) / (precision + recall)
-    print('threshold: %s, precision: %.2f, recall:%.2f ,Specificity:%.2f , f1_score:%.2f'%(i, precision, recall, Specificity,f1_score))
+    print('threshold: %.2f, precision: %.2f, recall:%.2f ,Specificity:%.2f , f1_score:%.2f'%(i, precision, recall, Specificity,f1_score))
 
 fpr_test, tpr_test, th_test = metrics.roc_curve(test.bad_ind, test.proba)
 fpr_train, tpr_train, th_train = metrics.roc_curve(train.bad_ind, train.proba)
@@ -66,3 +65,8 @@ plt.plot(fpr_test, tpr_test, 'b--')
 plt.plot(fpr_train, tpr_train, 'r-')
 plt.title('ROC curve')
 plt.show()
+
+'''multi-varible logistic regression'''
+formula = 'bad_ind ~ fico_score + bankruptcy_ind + tot_derog + age_oldest_tr + rev_util + ltv + veh_mileage'
+lg_m = smf.glm(formula = formula, data = train, family = sm.families.Binomial()).fit()
+print(lg_m.summary())

@@ -5,7 +5,9 @@ Credit Ranking Model
 Files Included
 -----------------
 logistic.py
+logistic_sk.py
 accepts.csv
+reject.csv
 readme.txt
 
 Project Description
