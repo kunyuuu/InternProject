@@ -332,7 +332,7 @@ if __name__ == "__main__":
     # print(woe3.bins)
     print(woe4.bins)
     # Plot and show WoE graph
-    fig = woe.plot()
+    fig = plt.plot(woe)
     plt.show(fig)
-    fig = woe2.plot()
+    fig = plt.plot(woe2)
     plt.show(fig)
