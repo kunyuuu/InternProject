@@ -27,6 +27,7 @@ or you can just comment out line 10(for mac users).
 
 to run: python3 logistic.py
 
+
 credit_ranking.py
 -----------------
 This program can realize a credit ranking system with both logistic regresssion and 
@@ -36,16 +37,17 @@ or you can just comment out line 22(for mac users).
 
 --Logistic Regression--
 to run: python3 credit_ranking.py
-        then follow the prompt by type "l" in the terminal
+        then follow the prompt by typing "l" in the terminal
 
 --Decision Tree--
 to run: python3 credit_ranking.py
-        then follow the prompt by type "d" in the terminal
+        then follow the prompt by typing "d" in the terminal
 
 
 NOTE
 -----------------
 logistic.py is a test version for this project. For full version, please find credit_ranking.py.
+
 
 Bugs
 -----------------
