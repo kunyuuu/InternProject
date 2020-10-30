@@ -13,7 +13,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import r2_score
 from sklearn.metrics import confusion_matrix,recall_score,classification_report
 from sklearn.metrics import roc_curve, auc
 
@@ -26,7 +27,7 @@ os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
 ### 2. drop none, nomalization                               ###
 ### 3. knn for reject.csv to get bad_int prediction          ###
 ### 4. modify the variables and data cleaning                ###
-### 5. woe/iv transformtion                                  ###
+### 5. woe/iv transformation                                 ###
 ################################################################
 
 # define the fill-none function
@@ -123,9 +124,9 @@ def logistic(X_train, X_test, y_train, y_test):
     return y_pred
 
 def decision_tree(X_train, X_test, y_train, y_test):
-    dt = DecisionTreeRegressor()
+    dt = DecisionTreeClassifier()
     dt.fit(X_train,y_train.values.ravel())
-    y_pred = dt.predict(X_test.values)
+    y_pred = dt.predict(X_test)
     print("Training score:%f" % (dt.score(X_train, y_train)))
     print("Testing score:%f" % (dt.score(X_test, y_test)))
     return y_pred
@@ -166,7 +167,9 @@ def evaluation(y_test, y_pred):
     cnf_matrix = confusion_matrix(y_test,y_pred)
     np.set_printoptions(precision=2)
 
-    print("Recall metric in the testing dataset: ", cnf_matrix[1,1]/(cnf_matrix[1,0]+cnf_matrix[1,1]))
+    print("TPR(Recall): ", cnf_matrix[0,0]/(cnf_matrix[0,0]+cnf_matrix[0,1]))
+    print("FPR: ", cnf_matrix[1,0]/(cnf_matrix[1,0]+cnf_matrix[1,1]))
+    print("Precision: ", cnf_matrix[0,0]/(cnf_matrix[0,0]+cnf_matrix[1,0]))
 
     #Plot non-normalized confusion matrix
     class_names = [0,1]
@@ -189,17 +192,17 @@ def evaluation(y_test, y_pred):
     plt.xlabel('False Positive Rate')  
     plt.ylabel('True Positive Rate')  
     plt.title('Receiver operating characteristic example')  
-    plt.legend(loc="lower right")  
+    #plt.legend(loc="lower right")  
     plt.show()
 
-    fig,ax = plt.subplots()
-    ax.plot(1 - threshold, tpr, label='tpr') # ks曲线要按照预测概率降序排列，所以需要1-threshold镜像
-    ax.plot(1 - threshold, fpr, label='fpr')
-    ax.plot(1 - threshold, tpr-fpr,label='KS')
+    plt.figure()
+    plt.plot(1 - threshold, tpr, label='tpr') # ks曲线要按照预测概率降序排列，所以需要1-threshold镜像
+    plt.plot(1 - threshold, fpr, label='fpr')
+    plt.plot(1 - threshold, tpr-fpr,label='KS')
     plt.xlabel('score')
     plt.title('KS Curve')
     plt.figure(figsize=(20,20))
-    ax.legend(loc='upper left', shadow=True, fontsize='x-large')
+    #plt.legend(loc='upper left', shadow=True, fontsize='x-large')
     plt.show()
 
 
