@@ -213,7 +213,8 @@ if __name__ == "__main__":
     rejects = pd.read_csv('rejects.csv')
     X, data_filled = data_processing(accepts,rejects)
     y = data_filled['bad_ind']
-    eda.plot(data_filled)
+    eda.plot(data_filled).show_browser()
+    eda.plot_correlation(data_filled).show_browser()
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
 
     #model selection part
