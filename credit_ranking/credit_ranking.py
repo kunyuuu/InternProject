@@ -6,6 +6,7 @@ import matplotlib.cm as cm
 import seaborn as sns
 import warnings
 import itertools
+import dataprep.eda as eda
 from woe import WoE
 from sklearn.preprocessing import Normalizer
 from sklearn.neighbors import NearestNeighbors
@@ -132,7 +133,7 @@ def decision_tree(X_train, X_test, y_train, y_test):
     return y_pred
 
 ################################################################
-### Model Evaluation                                    	 ###
+### Model Evaluation                                         ###
 ### 1. get confusion matrix                                  ###
 ### 2. compute and plot ROC/AUC                              ###
 ### 3. plot TP/FP curve and ks curve                         ###
@@ -212,6 +213,7 @@ if __name__ == "__main__":
     rejects = pd.read_csv('rejects.csv')
     X, data_filled = data_processing(accepts,rejects)
     y = data_filled['bad_ind']
+    eda.plot(data_filled)
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
 
     #model selection part
