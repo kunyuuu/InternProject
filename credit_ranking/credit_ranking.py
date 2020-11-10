@@ -1,4 +1,6 @@
 import os
+import io
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,19 +9,21 @@ import seaborn as sns
 import warnings
 import itertools
 import dataprep.eda as eda
+import graphviz
 from woe import WoE
 from sklearn.preprocessing import Normalizer
 from sklearn.neighbors import NearestNeighbors
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegressionCV,LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import export_graphviz
 from sklearn.metrics import r2_score
 from sklearn.metrics import confusion_matrix,recall_score,classification_report
 from sklearn.metrics import roc_curve, auc
 
-
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='gb18030')
 os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
 
 ################################################################
@@ -108,7 +112,6 @@ def data_processing(accepts, rejects):
     pd.Series(iv_c).sort_values(ascending=False)
 
     WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data_filled['bad_ind']).optimize().fit_transform(col,data_filled['bad_ind']))
-
     return WOE_c, data_filled
 
 ################################################################
@@ -119,17 +122,26 @@ def data_processing(accepts, rejects):
 ################################################################
 
 def logistic(X_train, X_test, y_train, y_test):
-    lr = LogisticRegression(C = 1)
-    lr.fit(X_train,y_train.values.ravel())
-    y_pred = lr.predict(X_test.values)
+    lr = LogisticRegressionCV(multi_class="ovr",fit_intercept=True,Cs=10,cv=5,penalty="l2",
+                              solver="lbfgs",tol=0.01,class_weight = 'balanced')
+    #lr = LogisticRegression(C = 2.0, class_weight = 'balanced')
+    lr.fit(X_train,y_train)
+    print("Training score:%f" % (lr.score(X_train, y_train)))
+    print("Testing score:%f" % (lr.score(X_test, y_test)))
+    y_pred = lr.predict(X_test)
     return y_pred
 
 def decision_tree(X_train, X_test, y_train, y_test):
-    dt = DecisionTreeClassifier()
+    dt = DecisionTreeClassifier(class_weight='balanced', criterion = 'entropy')
     dt.fit(X_train,y_train.values.ravel())
     y_pred = dt.predict(X_test)
     print("Training score:%f" % (dt.score(X_train, y_train)))
     print("Testing score:%f" % (dt.score(X_test, y_test)))
+    export_graphviz(dt,out_file='tree.dot',class_names=['1','0'],impurity=False,filled=True)
+    with open('tree.dot') as f:
+        dot_graph = f.read()
+    dot = graphviz.Source(dot_graph)
+    dot.view()
     return y_pred
 
 ################################################################
@@ -180,7 +192,8 @@ def evaluation(y_test, y_pred):
 
     #model evaluation
     fpr,tpr,threshold = roc_curve(y_test,y_pred, drop_intermediate=False) #compute TP&FP  
-    roc_auc = auc(fpr,tpr) ##compute auc 
+    roc_auc = auc(fpr,tpr) ##compute auc
+    print("AUC: ", roc_auc)
   
     plt.figure()  
     lw = 2  
@@ -213,8 +226,9 @@ if __name__ == "__main__":
     rejects = pd.read_csv('rejects.csv')
     X, data_filled = data_processing(accepts,rejects)
     y = data_filled['bad_ind']
-    eda.plot(data_filled).show_browser()
-    eda.plot_correlation(data_filled).show_browser()
+    print(X.head())
+    #eda.plot(data_filled).show_browser()
+    #eda.plot_correlation(X,).show_browser()
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
 
     #model selection part
