@@ -23,8 +23,8 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import confusion_matrix,recall_score,classification_report
 from sklearn.metrics import roc_curve, auc
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='gb18030')
-os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
+#sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='gb18030')
+#os.chdir(r"C:\Users\longcredit\Projects\InternProject\credit_ranking")
 
 ################################################################
 ### data preprocessing                                       ###
@@ -42,29 +42,8 @@ def Myfillna_median(df):
         df[i].fillna(value=median, inplace=True)
     return df
 
-def data_processing(accepts, rejects):
-    accepts_x = accepts[["tot_derog","age_oldest_tr","rev_util","fico_score","ltv"]]
-    accepts_y = accepts['bad_ind']
-    rejects_x = rejects[["tot_derog","age_oldest_tr","rev_util","fico_score","ltv"]]
-
-    accepts_x_filled=Myfillna_median(accepts_x)
-    rejects_x_filled=Myfillna_median(rejects_x)
-
-    #nomalization
-    accepts_x_norm = pd.DataFrame(Normalizer().fit_transform(accepts_x_filled))
-    accepts_x_norm.columns = accepts_x_filled.columns
-    rejects_x_norm = pd.DataFrame(Normalizer().fit_transform(rejects_x_filled))
-    rejects_x_norm.columns = rejects_x_filled.columns
-
-    #use KNN model to predict 'bad_int' in reject.cvs
-    neigh = KNeighborsClassifier(n_neighbors=5, weights='distance')
-    neigh.fit(accepts_x_norm, accepts_y) 
-    rejects['bad_ind'] = neigh.predict(rejects_x_norm)
-
-    #combain the two dataset
-    rejects_res = rejects[rejects['bad_ind'] == 0].sample(1340)
-    rejects_res = pd.concat([rejects_res, rejects[rejects['bad_ind'] == 1]], axis = 0)
-    data = pd.concat([accepts.iloc[:, 2:-1], rejects_res.iloc[:,1:]], axis = 0)
+def data_processing(accepts):
+    data = accepts.dropna(axis = 0, how = 'any')
 
     #convert the catagorical variable to 0/1
     bankruptcy_dict = {'N':0, 'Y':1}
@@ -81,13 +60,13 @@ def data_processing(accepts, rejects):
     data.drop(['vehicle_make'], axis = 1, inplace = True)
     data_filled=Myfillna_median(data)
 
-    X = data_filled[['age_oldest_tr', 'bankruptcy_ind', 'down_pyt', 'fico_score',
-                    'loan_amt', 'loan_term', 'ltv', 'msrp', 'purch_price', 'rev_util',
-                    'tot_derog', 'tot_income', 'tot_open_tr', 'tot_rev_debt',
-                    'tot_rev_line', 'tot_rev_tr', 'tot_tr', 'used_ind', 'veh_mileage',
-                    'vehicle_year']]
+    X = data_filled[['age_oldest_tr', 'bankruptcy_ind', 'fico_score',
+       'loan_amt', 'loan_term', 'ltv',
+       'tot_income', 'tot_open_tr',
+       'tot_rev_tr', 'tot_tr', 'used_ind',
+       'vehicle_year']]
     y = data_filled['bad_ind']
-
+    
     #random forest
     clf = RandomForestClassifier(max_depth=5, random_state=0)
     clf.fit(X,y)
@@ -96,7 +75,7 @@ def data_processing(accepts, rejects):
     importances_order.sort(reverse=True)
     cols = list(X.columns)
     col_top = []
-    for i in importances_order[:9]:
+    for i in importances_order[:5]:
         col_top.append((i,cols[importances.index(i)]))
         col = [i[1] for i in col_top]
 
@@ -112,6 +91,7 @@ def data_processing(accepts, rejects):
     pd.Series(iv_c).sort_values(ascending=False)
 
     WOE_c = data_filled[col].apply(lambda col:WoE(v_type='c',qnt_num=5).fit(col,data_filled['bad_ind']).optimize().fit_transform(col,data_filled['bad_ind']))
+    
     return WOE_c, data_filled
 
 ################################################################
@@ -122,7 +102,7 @@ def data_processing(accepts, rejects):
 ################################################################
 
 def logistic(X_train, X_test, y_train, y_test):
-    lr = LogisticRegressionCV(multi_class="ovr",fit_intercept=True,Cs=10,cv=5,penalty="l2",
+    lr = LogisticRegressionCV(multi_class="ovr",fit_intercept=True,Cs=10,cv=3,penalty="l2",
                               solver="lbfgs",tol=0.01,class_weight = 'balanced')
     #lr = LogisticRegression(C = 2.0, class_weight = 'balanced')
     lr.fit(X_train,y_train)
@@ -133,7 +113,7 @@ def logistic(X_train, X_test, y_train, y_test):
 
 def decision_tree(X_train, X_test, y_train, y_test):
     dt = DecisionTreeClassifier(class_weight='balanced', criterion = 'entropy')
-    dt.fit(X_train,y_train.values.ravel())
+    dt.fit(X_train,y_train)
     y_pred = dt.predict(X_test)
     print("Training score:%f" % (dt.score(X_train, y_train)))
     print("Testing score:%f" % (dt.score(X_test, y_test)))
@@ -165,7 +145,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xticks(tick_marks, classes, rotation=0)
     plt.yticks(tick_marks, classes)
 
-    thresh = cm.max() / 2.
+    thresh = cm.max() / 2
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j],
                  horizontalalignment="center",
@@ -223,10 +203,10 @@ def evaluation(y_test, y_pred):
 if __name__ == "__main__":
     #data preprocessing part
     accepts = pd.read_csv('accepts.csv')
-    rejects = pd.read_csv('rejects.csv')
-    X, data_filled = data_processing(accepts,rejects)
+    #rejects = pd.read_csv('rejects.csv')
+    X, data_filled = data_processing(accepts)
     y = data_filled['bad_ind']
-    print(X.head())
+    print(X)
     #eda.plot(data_filled).show_browser()
     #eda.plot_correlation(X,).show_browser()
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.3, random_state = 0)
@@ -248,6 +228,29 @@ if __name__ == "__main__":
     #model evaluation part
     evaluation(y_test, y_pred)
     
+'''
+	accepts_x = accepts[["tot_derog","age_oldest_tr","rev_util","fico_score","ltv"]]
+    accepts_y = accepts['bad_ind']
+    rejects_x = rejects[["tot_derog","age_oldest_tr","rev_util","fico_score","ltv"]]
 
+    accepts_x_filled=Myfillna_median(accepts_x)
+    rejects_x_filled=Myfillna_median(rejects_x)
+
+    #nomalization
+    accepts_x_norm = pd.DataFrame(Normalizer().fit_transform(accepts_x_filled))
+    accepts_x_norm.columns = accepts_x_filled.columns
+    rejects_x_norm = pd.DataFrame(Normalizer().fit_transform(rejects_x_filled))
+    rejects_x_norm.columns = rejects_x_filled.columns
+
+    #use KNN model to predict 'bad_int' in reject.cvs
+    neigh = KNeighborsClassifier(n_neighbors=5, weights='distance')
+    neigh.fit(accepts_x_norm, accepts_y) 
+    rejects['bad_ind'] = neigh.predict(rejects_x_norm)
+
+    #combain the two dataset
+    rejects_res = rejects[rejects['bad_ind'] == 0].sample(1340)
+    rejects_res = pd.concat([rejects_res, rejects[rejects['bad_ind'] == 1]], axis = 0)
+    data = pd.concat([accepts.iloc[:, 2:-1], rejects_res.iloc[:,1:]], axis = 0)
+'''
 
 
